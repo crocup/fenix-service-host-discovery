@@ -3,8 +3,7 @@ from datetime import datetime
 from typing import List
 import nmap3
 import requests
-
-API_DATABASE = 'http://127.0.0.1:9002/api/v1/database/mongo'
+from service import config
 
 
 def get_time() -> str:
@@ -42,19 +41,19 @@ def record_result(data: List):
     """
     try:
         for host_discovery in data:
-            data_ip = requests.post(API_DATABASE + '/get_one', json={"data": {"ip": host_discovery},
+            data_ip = requests.post(config.Config.API_DATABASE + '/get_one', json={"data": {"ip": host_discovery},
                                                                      "base": "host_discovery", "collection": "result"})
             data_ip = data_ip.json()
             if len(data_ip['data']) == 0:
-                requests.post(API_DATABASE + '/insert',
+                requests.post(config.Config.API_DATABASE + '/insert',
                               json={"data": {"ip": host_discovery, "tag": "None", "time": get_time()},
                                     "base": "host_discovery", "collection": "result"})
-                requests.post(API_DATABASE + '/insert',
+                requests.post(config.Config.API_DATABASE + '/insert',
                               json={"data": {"time": get_time(), "message": f"New IP: {host_discovery}"},
                                     "base": "notification", "collection": "notifications"})
                 # telegram_message(message)
             else:
-                requests.post(API_DATABASE + '/upsert',
+                requests.post(config.Config.API_DATABASE + '/upsert',
                               json={"data": {"name": {"ip": host_discovery}, "set": {"time": get_time()}},
                                     "base": "host_discovery", "collection": "result"})
     except Exception as e:
