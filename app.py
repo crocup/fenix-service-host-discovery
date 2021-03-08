@@ -13,7 +13,7 @@ from worker import conn
 
 app = Flask(__name__)
 app.config.from_object(config.DevelopmentConfig)
-q = Queue(connection=conn)
+q = Queue(name='discovery', connection=conn)
 
 
 @app.route('/api/v1/discovery/get', methods=['POST'])
