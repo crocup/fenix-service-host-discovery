@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List
 import nmap3
 import requests
-from service import config
+import config
 
 
 def get_time() -> str:
@@ -42,7 +42,8 @@ def record_result(data: List):
     try:
         for host_discovery in data:
             data_ip = requests.post(config.Config.API_DATABASE + '/get_one', json={"data": {"ip": host_discovery},
-                                                                     "base": "host_discovery", "collection": "result"})
+                                                                                   "base": "host_discovery",
+                                                                                   "collection": "result"})
             data_ip = data_ip.json()
             if len(data_ip['data']) == 0:
                 requests.post(config.Config.API_DATABASE + '/insert',
