@@ -15,12 +15,12 @@ def get_time() -> str:
     return date_time
 
 
-def get_hosts(host: str) -> str:
+def get_hosts(host: str) -> List[str]:
     """
 
     """
+    clients_list = []
     try:
-        clients_list = []
         hd_scan = nmap3.NmapHostDiscovery()
         result = hd_scan.nmap_no_portscan(host)
         for res in result:
@@ -32,7 +32,7 @@ def get_hosts(host: str) -> str:
         print(f'error {e}')
         clients_list = []
     record_result(data=clients_list)
-    return "success"
+    return clients_list
 
 
 def record_result(data: List):
