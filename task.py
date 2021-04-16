@@ -1,9 +1,10 @@
 import re
 from datetime import datetime
-from typing import List
+from typing import List, Dict
 import nmap3
 import requests
 import config
+from database import MessageProducer, MongoDriver
 
 
 def get_time() -> str:
@@ -15,7 +16,7 @@ def get_time() -> str:
     return date_time
 
 
-def get_hosts(host: str) -> List[str]:
+def get_hosts(host: str) -> Dict[str, List[str]]:
     """
 
     """
@@ -29,10 +30,9 @@ def get_hosts(host: str) -> List[str]:
                 ip = check_ip.group()
                 clients_list.append(ip)
     except Exception as e:
-        print(f'error {e}')
         clients_list = []
     record_result(data=clients_list)
-    return clients_list
+    return {"result": clients_list}
 
 
 def record_result(data: List):
@@ -41,21 +41,18 @@ def record_result(data: List):
     """
     try:
         for host_discovery in data:
-            data_ip = requests.post(config.Config.API_DATABASE + '/get_one', json={"data": {"ip": host_discovery},
-                                                                                   "base": "host_discovery",
-                                                                                   "collection": "result"})
-            data_ip = data_ip.json()
-            if len(data_ip['data']) == 0:
-                requests.post(config.Config.API_DATABASE + '/insert',
-                              json={"data": {"ip": host_discovery, "tag": "None", "time": get_time()},
-                                    "base": "host_discovery", "collection": "result"})
-                requests.post(config.Config.API_DATABASE + '/insert',
-                              json={"data": {"time": get_time(), "message": f"New IP: {host_discovery}"},
-                                    "base": "notification", "collection": "notifications"})
-                # telegram_message(message)
-            else:
-                requests.post(config.Config.API_DATABASE + '/upsert',
-                              json={"data": {"name": {"ip": host_discovery}, "set": {"time": get_time()}},
-                                    "base": "host_discovery", "collection": "result"})
+            message_host_discovery = MessageProducer(MongoDriver(host='localhost', port=27017,
+                                                                 base='host_discovery', collection='result'))
+            data_ip = message_host_discovery.get_message(message={"ip": host_discovery})
+            for i in data_ip:
+                # print(i, len(i))
+                if len(i) <= 2:
+                    message_notification = MessageProducer(MongoDriver(host='localhost', port=27017,
+                                                                       base='notification', collection='notifications'))
+                    message_host_discovery.insert_message({"ip": host_discovery, "tag": "None", "time": get_time()})
+                    message_notification.insert_message({"time": get_time(), "message": f"New IP: {host_discovery}"})
+                    # telegram_message(message)
+                else:
+                    message_host_discovery.update_message(message={"ip": host_discovery}, new_value={"time": get_time()})
     except Exception as e:
         print(f'error {e}')
